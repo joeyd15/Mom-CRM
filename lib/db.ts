@@ -14,7 +14,16 @@ function createPrismaClient(): PrismaClient {
     );
   }
 
-  const adapter = new PrismaPg({ connectionString: connectionString ?? "" });
+  // Supabase's connection pooler (Supavisor) presents a certificate that is not
+  // in Node's default CA trust store. node-postgres verifies the chain by default
+  // even with `sslmode=require`, which throws:
+  //   "Error opening a TLS connection: self-signed certificate in certificate chain" (P1011)
+  // We keep TLS encryption on but skip CA verification so the pooler is reachable
+  // from Vercel's serverless runtime. The connection is still encrypted in transit.
+  const adapter = new PrismaPg({
+    connectionString: connectionString ?? "",
+    ssl: { rejectUnauthorized: false },
+  });
 
   return new PrismaClient({
     adapter,
