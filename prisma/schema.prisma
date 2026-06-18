@@ -1,0 +1,147 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Lead {
+  id                    String    @id @default(cuid())
+  followUpBossId        String?   @unique
+  source                String    @default("Unknown")
+  name                  String
+  email                 String?
+  phone                 String?
+  propertyAddress       String?
+  inquiryMessage        String?
+  status                String    @default("New Lead")
+  priority              String    @default("Normal")
+  assignedAgent         String?
+  lastContactedAt       DateTime?
+  nextFollowUpAt        DateTime?
+  campaignId            String?
+  campaignStage         Int       @default(0)
+  notes                 String?
+  aiSummary             String?
+  aiRecommendedNextStep String?
+  rawFubData            Json?
+  optedOut              Boolean   @default(false)
+  doNotContact          Boolean   @default(false)
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  campaign   Campaign?  @relation(fields: [campaignId], references: [id])
+  activities Activity[]
+  messages   Message[]
+}
+
+model Campaign {
+  id               String   @id @default(cuid())
+  name             String
+  description      String?
+  isActive         Boolean  @default(false)
+  leadSource       String?
+  triggerStatus    String?
+  stopConditions   Json?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  leads Lead[]
+  steps CampaignStep[]
+}
+
+model CampaignStep {
+  id         String   @id @default(cuid())
+  campaignId String
+  stepNumber Int
+  channel    String
+  delayHours Int      @default(0)
+  subject    String?
+  body       String
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+}
+
+model Activity {
+  id          String   @id @default(cuid())
+  leadId      String
+  type        String
+  title       String
+  description String?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+}
+
+model Message {
+  id         String    @id @default(cuid())
+  leadId     String
+  channel    String
+  direction  String    @default("outbound")
+  status     String    @default("pending")
+  subject    String?
+  body       String
+  sentAt     DateTime?
+  approvedAt DateTime?
+  approvedBy String?
+  error      String?
+  metadata   Json?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+}
+
+model SyncLog {
+  id           String   @id @default(cuid())
+  source       String
+  status       String
+  leadsFound   Int      @default(0)
+  leadsAdded   Int      @default(0)
+  leadsUpdated Int      @default(0)
+  error        String?
+  details      Json?
+  createdAt    DateTime @default(now())
+}
+
+model MetaCampaignDraft {
+  id                String    @id @default(cuid())
+  name              String
+  objective         String
+  specialAdCategory String    @default("HOUSING")
+  budget            Float
+  budgetType        String    @default("daily")
+  startDate         DateTime?
+  endDate           DateTime?
+  audience          Json?
+  creative          Json?
+  status            String    @default("draft")
+  approvedAt        DateTime?
+  approvedBy        String?
+  metaCampaignId    String?
+  performance       Json?
+  notes             String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+}
+
+model Settings {
+  id                String   @id @default("singleton")
+  agentEnabled      Boolean  @default(true)
+  autoClassify      Boolean  @default(true)
+  autoCampaign      Boolean  @default(true)
+  messageGen        Boolean  @default(true)
+  sendMode          String   @default("disabled")
+  maxMsgPerDay      Int      @default(3)
+  businessHoursOnly Boolean  @default(true)
+  businessHoursStart Int     @default(9)
+  businessHoursEnd  Int      @default(17)
+  handoffRules      Json?
+  priorityRules     Json?
+  updatedAt         DateTime @updatedAt
+}
