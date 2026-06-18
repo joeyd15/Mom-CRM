@@ -71,9 +71,7 @@ export interface FubEvent {
 
 function buildHeaders(): Record<string, string> {
   if (!env.fubApiKey) {
-    throw new Error(
-      "FOLLOW_UP_BOSS_API_KEY is not set. Add it to your .env.local file."
-    );
+    console.warn("[FUB] FOLLOW_UP_BOSS_API_KEY is not set — API calls will fail.");
   }
 
   // FUB uses HTTP Basic Auth: API key as username, empty password

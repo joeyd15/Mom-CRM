@@ -6,8 +6,15 @@ const globalForPrisma = globalThis as unknown as {
 };
 
 function createPrismaClient(): PrismaClient {
-  const connectionString = process.env.DATABASE_URL ?? "";
-  const adapter = new PrismaPg({ connectionString });
+  const connectionString = process.env.DATABASE_URL;
+
+  if (!connectionString) {
+    console.warn(
+      "[DB] DATABASE_URL is not set. Database queries will fail until it is configured."
+    );
+  }
+
+  const adapter = new PrismaPg({ connectionString: connectionString ?? "" });
 
   return new PrismaClient({
     adapter,
@@ -18,6 +25,7 @@ function createPrismaClient(): PrismaClient {
   });
 }
 
+// Cache the client globally across requests in the same serverless function instance.
+// This prevents exhausting the Supabase connection pool on repeated cold starts.
 export const db = globalForPrisma.prisma ?? createPrismaClient();
-
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = db;
+globalForPrisma.prisma = db;
